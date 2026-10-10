@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendConfirmationEmail } from "@/lib/confirmationEmail";
 import { createMeetEvent, googleConfigured } from "@/lib/googleCalendar";
-import { isValidTimeZone, validateMeeting, type Meeting } from "@/lib/schedule";
+import { MEETING_TIME_ZONE, validateMeeting, type Meeting } from "@/lib/schedule";
 import { normalizeLead, validateLead, type LeadPayload } from "@/lib/validation";
 
 /**
@@ -36,8 +36,8 @@ export async function POST(request: Request) {
   let meeting: Meeting | undefined;
   if (body.meeting) {
     const m = body.meeting;
-    const timeZone = typeof m.timeZone === "string" && isValidTimeZone(m.timeZone) ? m.timeZone : "UTC";
-    const candidate = { date: String(m.date ?? ""), time: String(m.time ?? ""), timeZone };
+    // calls are always booked in Eastern Time, whatever the client sends
+    const candidate = { date: String(m.date ?? ""), time: String(m.time ?? ""), timeZone: MEETING_TIME_ZONE };
     const errors = validateMeeting(candidate);
     if (Object.keys(errors).length > 0) {
       return NextResponse.json({ ok: false, meetingErrors: errors }, { status: 422 });

@@ -68,10 +68,18 @@ export function validateMeeting(m: Partial<Meeting>, now = Date.now()): MeetingE
   return errors;
 }
 
-/** "Tuesday, 14 October 2026 at 15:30 (Africa/Lagos)" */
+/** Calls are always scheduled in US Eastern Time (EST in winter, EDT in summer). */
+export const MEETING_TIME_ZONE = "America/New_York";
+
+/** Today's date (YYYY-MM-DD) in the meeting time zone. */
+export function todayInMeetingZone(now = Date.now()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: MEETING_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+
+/** "Wednesday, October 14, 2026 at 3:30 PM EDT" */
 export function formatMeeting(m: Meeting) {
   const start = new Date(meetingStartMs(m));
-  const day = new Intl.DateTimeFormat("en-GB", { timeZone: m.timeZone, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(start);
-  const time = new Intl.DateTimeFormat("en-GB", { timeZone: m.timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(start);
-  return `${day} at ${time} (${m.timeZone})`;
+  const day = new Intl.DateTimeFormat("en-US", { timeZone: m.timeZone, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(start);
+  const time = new Intl.DateTimeFormat("en-US", { timeZone: m.timeZone, hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(start);
+  return `${day} at ${time}`;
 }

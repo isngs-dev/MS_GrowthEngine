@@ -121,7 +121,7 @@ export const SCHEDULE = {
   body: "Pick a date and time for a call, or skip it and we will just email you.",
   date: "Date",
   time: "Time",
-  zone: "Your time zone:",
+  zone: "All times are in Eastern Time (EST/EDT).",
   book: "Book meeting",
   booking: "Booking...",
   decline: "No, just email me, thanks",

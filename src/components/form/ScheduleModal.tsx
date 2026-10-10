@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { validateMeeting, type Meeting, type MeetingErrors } from "@/lib/schedule";
+import { MEETING_TIME_ZONE, todayInMeetingZone, validateMeeting, type Meeting, type MeetingErrors } from "@/lib/schedule";
 import { SCHEDULE } from "@/content/copy";
 
 type Props = {
@@ -12,11 +12,6 @@ type Props = {
   onDecline: () => void;
 };
 
-function localDateString(d = new Date()) {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
 const fieldClass =
   "field-input h-14 w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 text-base text-white [color-scheme:dark]";
 
@@ -25,7 +20,7 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [errors, setErrors] = useState<MeetingErrors>({});
-  const [timeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const timeZone = MEETING_TIME_ZONE;
   const panel = useRef<HTMLDivElement>(null);
   const dateInput = useRef<HTMLInputElement>(null);
 
@@ -111,7 +106,7 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
               ref={dateInput}
               id="meet-date"
               type="date"
-              min={localDateString()}
+              min={todayInMeetingZone()}
               value={date}
               disabled={busy}
               onChange={(e) => {
@@ -152,7 +147,7 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
             )}
           </div>
           <p className="px-1 text-sm text-faint">
-            {SCHEDULE.zone} {timeZone}
+            {SCHEDULE.zone}
           </p>
         </div>
 

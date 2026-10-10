@@ -51,7 +51,7 @@ export async function sendConfirmationEmail(lead: LeadPayload, meeting?: Meeting
   const name = esc(lead.name);
   const company = esc(lead.company);
   const url = meeting ? meetingUrl ?? newMeetingUrl() : undefined;
-  const when = meeting ? formatMeeting(meeting) : undefined;
+  const when = meeting ? formatMeeting(meeting) : undefined; // already includes the zone, e.g. "3:30 PM EDT"
 
   const subject = meeting ? "Your MS Growth Engine call is booked" : "Thank you. We'll be in touch shortly.";
   const text = meeting
