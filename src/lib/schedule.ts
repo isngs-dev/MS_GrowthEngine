@@ -1,0 +1,77 @@
+/**
+ * Meeting-request helpers shared by the browser (inline validation) and the API route.
+ * A meeting is the local wall-clock date + time the visitor picked, plus their IANA time zone.
+ */
+
+export type Meeting = {
+  /** YYYY-MM-DD */
+  date: string;
+  /** HH:MM (24h) */
+  time: string;
+  /** IANA zone, e.g. "Africa/Lagos" */
+  timeZone: string;
+};
+
+export type MeetingErrors = Partial<Record<"date" | "time", string>>;
+
+export const MEETING_MINUTES = 30;
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function isValidTimeZone(tz: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Offset (ms) of `timeZone` from UTC at the instant `utcMs`. */
+function zoneOffset(utcMs: number, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(utcMs));
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  return asUtc - Math.floor(utcMs / 1000) * 1000;
+}
+
+/** The UTC instant (ms) at which the wall clock in `timeZone` reads `date` `time`. */
+export function meetingStartMs(m: Meeting) {
+  const [y, mo, d] = m.date.split("-").map(Number);
+  const [h, mi] = m.time.split(":").map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  let utc = guess - zoneOffset(guess, m.timeZone);
+  utc = guess - zoneOffset(utc, m.timeZone); // second pass settles DST edges
+  return utc;
+}
+
+export function validateMeeting(m: Partial<Meeting>, now = Date.now()): MeetingErrors {
+  const errors: MeetingErrors = {};
+  if (!m.date || !DATE_RE.test(m.date)) errors.date = "Please choose a date.";
+  if (!m.time || !TIME_RE.test(m.time)) errors.time = "Please choose a time.";
+  if (errors.date || errors.time) return errors;
+  const tz = m.timeZone && isValidTimeZone(m.timeZone) ? m.timeZone : "UTC";
+  const start = meetingStartMs({ date: m.date!, time: m.time!, timeZone: tz });
+  if (Number.isNaN(start)) errors.date = "Please choose a valid date.";
+  else if (start < now + 15 * 60 * 1000) errors.time = "Please choose a time in the future.";
+  else if (start > now + 366 * 24 * 60 * 60 * 1000) errors.date = "Please choose a date within the next year.";
+  return errors;
+}
+
+/** "Tuesday, 14 October 2026 at 15:30 (Africa/Lagos)" */
+export function formatMeeting(m: Meeting) {
+  const start = new Date(meetingStartMs(m));
+  const day = new Intl.DateTimeFormat("en-GB", { timeZone: m.timeZone, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(start);
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone: m.timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(start);
+  return `${day} at ${time} (${m.timeZone})`;
+}
