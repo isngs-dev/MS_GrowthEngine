@@ -81,28 +81,28 @@ ${site}
 You received this email because you submitted the contact form on our website.`;
 
   const row = (label: string, value: string) =>
-    `<tr><td style="padding:0 0 18px"><div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7a6a5a;padding-bottom:4px">${label}</div><div style="font-size:17px;font-weight:700;color:#2a1c13">${value}</div></td></tr>`;
+    `<tr><td style="padding:0 0 18px"><div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a08a78;padding-bottom:4px">${label}</div><div style="font-size:17px;font-weight:700;color:#f6ece0">${value}</div></td></tr>`;
 
   const details = meeting
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f0e6;border-radius:14px;margin:22px 0 8px"><tr><td style="padding:22px 24px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#3a281b;border:1px solid #4d3626;border-radius:14px;margin:22px 0 8px"><tr><td style="padding:22px 24px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 ${row("When", esc(when!))}
 ${row("Duration", `${MEETING_MINUTES} minutes`)}
-${row("Meeting link", `<a href="${esc(url!)}" style="color:#2a1c13">${esc(url!)}</a>`)}
+${row("Meeting link", `<a href="${esc(url!)}" style="color:#ffc4a0">${esc(url!)}</a>`)}
 </table></td></tr></table>
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0 6px"><tr><td style="background:#2a1c13;border-radius:999px"><a href="${esc(url!)}" style="display:inline-block;padding:14px 30px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none">Join meeting</a></td></tr></table>
-<p style="margin:16px 0 0;font-size:14px;color:#7a6a5a">A calendar invite is attached to this email.</p>`
-    : `<p style="margin:0;font-size:16px;line-height:1.6;color:#5c4a3b">We have received your details for <strong>${company}</strong> and a member of the iSN team will be in touch shortly.</p>`;
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0 6px"><tr><td style="background:#ffc4a0;border-radius:999px"><a href="${esc(url!)}" style="display:inline-block;padding:14px 30px;color:#2a160c;font-size:16px;font-weight:700;text-decoration:none">Join meeting</a></td></tr></table>
+<p style="margin:16px 0 0;font-size:14px;color:#a08a78">A calendar invite is attached to this email.</p>`
+    : `<p style="margin:0;font-size:16px;line-height:1.6;color:#cdb9a5">We have received your details for <strong style="color:#f6ece0">${company}</strong> and a member of the iSN team will be in touch shortly.</p>`;
 
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#f5ede1">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5ede1"><tr><td align="center" style="padding:32px 16px">
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#1a120d" bgcolor="#1a120d">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#1a120d" style="background:#1a120d"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;font-family:Arial,Helvetica,sans-serif">
-<tr><td style="padding:0 4px 18px;font-size:22px;color:#2a1c13"><span style="color:#2f5bd0;font-style:italic;font-weight:700">iSN</span><span style="color:#cdbfae"> &nbsp;|&nbsp; </span><span style="font-weight:700">MS Growth Engine</span></td></tr>
-<tr><td style="background:#ffffff;border-radius:24px;padding:34px 32px">
-<h1 style="margin:0 0 14px;font-size:30px;line-height:1.2;color:#2a1c13">${meeting ? "Your meeting is booked" : "Thank you."}</h1>
-<p style="margin:0 0 6px;font-size:16px;line-height:1.6;color:#5c4a3b">Hi ${name},${meeting ? " thank you for your interest in MS Growth Engine. Here are the details of your call with the iSN team." : ""}</p>
+<tr><td style="padding:0 4px 18px;font-size:22px;color:#f6ece0"><span style="background:#fbefe3;border-radius:6px;padding:3px 10px;color:#2f5bd0;font-style:italic;font-weight:700">iSN</span><span style="color:#6b4c38"> &nbsp;|&nbsp; </span><span style="font-weight:700">MS Growth Engine</span></td></tr>
+<tr><td bgcolor="#2a1c13" style="background:#2a1c13;border:1px solid #4d3626;border-radius:24px;padding:34px 32px">
+<h1 style="margin:0 0 14px;font-size:30px;line-height:1.2;color:#f6ece0">${meeting ? "Your meeting is booked" : "Thank you."}</h1>
+<p style="margin:0 0 6px;font-size:16px;line-height:1.6;color:#cdb9a5">Hi ${name},${meeting ? " thank you for your interest in MS Growth Engine. Here are the details of your call with the iSN team." : ""}</p>
 ${details}
 </td></tr>
-<tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:#8a7a6a;text-align:center">iSN Business Solutions &middot; <a href="${site}" style="color:#8a7a6a">www.isngs.com</a><br/>You received this email because you ${meeting ? "requested a call" : "submitted the contact form"} on our website.</td></tr>
+<tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:#a08a78;text-align:center">iSN Business Solutions &middot; <a href="${site}" style="color:#ffc4a0">www.isngs.com</a><br/>You received this email because you ${meeting ? "requested a call" : "submitted the contact form"} on our website.</td></tr>
 </table></td></tr></table></body></html>`;
 
   const body: Record<string, unknown> = {
