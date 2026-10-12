@@ -1,8 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const SRC = "/video/explainer.mp4";
+
+const BTN =
+  "flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur transition hover:bg-black/70";
 
 function SoundIcon({ muted }: { muted: boolean }) {
   return (
@@ -28,11 +31,46 @@ function PlayPauseIcon({ playing }: { playing: boolean }) {
   );
 }
 
-/** Explainer video for the hero: muted autoplay loop with pause and sound toggles. */
+function ExpandIcon({ full }: { full: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+    </svg>
+  );
+}
+
+/** Explainer video for the hero: muted autoplay loop with pause, sound and fullscreen controls. */
 export default function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
+  // "Full screen" is a fixed full-viewport overlay, so it works in every browser/webview; the
+  // native Fullscreen API is requested on top of it where supported (it can hang in embedded webviews).
+  const [full, setFull] = useState(false);
+  const wasNative = useRef(false);
+
+  useEffect(() => {
+    const sync = () => {
+      const active = document.fullscreenElement === frameRef.current;
+      if (!active && wasNative.current) setFull(false); // user left native fullscreen (Esc)
+      wasNative.current = active;
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [full]);
 
   const togglePlay = () => {
     const v = ref.current;
@@ -49,10 +87,30 @@ export default function HeroVideo() {
     if (!v.muted) void v.play();
   };
 
+  const toggleFullscreen = () => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    if (full) {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+      setFull(false);
+      return;
+    }
+    setFull(true);
+    frame.requestFullscreen?.().catch(() => {});
+  };
+
   return (
     <div className="relative">
       <div aria-hidden className="absolute -inset-4 rounded-[2.4rem] bg-gradient-to-br from-blue/25 via-violet/20 to-cyan/20 blur-3xl" />
-      <div className="gborder gborder-live relative rounded-[1.6rem]">
+      <div
+        ref={frameRef}
+        // .gborder sets position:relative outside Tailwind's layers, so it is dropped while full screen
+        className={
+          full
+            ? "fixed inset-0 z-[200] flex items-center justify-center bg-black"
+            : "gborder gborder-live relative rounded-[1.6rem]"
+        }
+      >
         <video
           ref={ref}
           src={SRC}
@@ -64,14 +122,14 @@ export default function HeroVideo() {
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           aria-label="MS Growth Engine explainer video"
-          className="relative z-10 aspect-video w-full rounded-[inherit] bg-ink-900 object-cover"
+          className={`relative z-10 w-full rounded-[inherit] bg-ink-900 ${full ? "h-full object-contain" : "aspect-video object-cover"}`}
         />
-        <div className="absolute bottom-3 right-3 z-20 flex gap-2">
+        <div className={`absolute z-20 flex gap-2 ${full ? "bottom-6 right-6" : "bottom-3 right-3"}`}>
           <button
             type="button"
             onClick={togglePlay}
             aria-label={playing ? "Pause video" : "Play video"}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
+            className={BTN}
           >
             <PlayPauseIcon playing={playing} />
           </button>
@@ -80,9 +138,17 @@ export default function HeroVideo() {
             onClick={toggleSound}
             aria-label={muted ? "Unmute video" : "Mute video"}
             aria-pressed={!muted}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
+            className={BTN}
           >
             <SoundIcon muted={muted} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label={full ? "Exit full screen" : "Full screen"}
+            className={BTN}
+          >
+            <ExpandIcon full={full} />
           </button>
         </div>
       </div>

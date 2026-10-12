@@ -54,7 +54,7 @@ export default function Hero() {
       className="relative flex min-h-[100svh] items-start overflow-hidden px-5 pt-32 sm:px-8 lg:items-center lg:pt-24"
     >
       <HeroBackdrop />
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 pb-16 lg:grid-cols-[1fr_1.1fr] lg:gap-14 lg:pb-0">
+      <div className="relative mx-auto grid w-full max-w-[88rem] items-center gap-12 pb-16 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.3fr)] lg:gap-12 lg:pb-0">
         <div className="max-w-2xl">
           <RevealHeading
             as="h1"
@@ -63,7 +63,7 @@ export default function Hero() {
             highlight={HERO.headlineHighlight}
             trigger="load"
             delay={0.35}
-            className="font-display text-[clamp(2.7rem,5.8vw,5.7rem)] font-bold leading-[0.98] text-white"
+            className="font-display text-[clamp(2.6rem,4.7vw,4.9rem)] font-bold leading-[0.98] text-white"
           />
           <div className="mt-10">
             <CtaButton>{HERO.cta}</CtaButton>
