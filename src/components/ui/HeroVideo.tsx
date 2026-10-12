@@ -20,10 +20,26 @@ function SoundIcon({ muted }: { muted: boolean }) {
   );
 }
 
-/** Explainer video for the hero: muted autoplay loop with a sound toggle. */
+function PlayPauseIcon({ playing }: { playing: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+      {playing ? <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /> : <path d="M8 5v14l11-7z" />}
+    </svg>
+  );
+}
+
+/** Explainer video for the hero: muted autoplay loop with pause and sound toggles. */
 export default function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(true);
+
+  const togglePlay = () => {
+    const v = ref.current;
+    if (!v) return;
+    if (v.paused) void v.play();
+    else v.pause();
+  };
 
   const toggleSound = () => {
     const v = ref.current;
@@ -45,18 +61,30 @@ export default function HeroVideo() {
           loop
           playsInline
           preload="auto"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
           aria-label="MS Growth Engine explainer video"
           className="relative z-10 aspect-video w-full rounded-[inherit] bg-ink-900 object-cover"
         />
-        <button
-          type="button"
-          onClick={toggleSound}
-          aria-label={muted ? "Unmute video" : "Mute video"}
-          aria-pressed={!muted}
-          className="absolute bottom-3 right-3 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
-        >
-          <SoundIcon muted={muted} />
-        </button>
+        <div className="absolute bottom-3 right-3 z-20 flex gap-2">
+          <button
+            type="button"
+            onClick={togglePlay}
+            aria-label={playing ? "Pause video" : "Play video"}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
+          >
+            <PlayPauseIcon playing={playing} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            aria-pressed={!muted}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
+          >
+            <SoundIcon muted={muted} />
+          </button>
+        </div>
       </div>
     </div>
   );
