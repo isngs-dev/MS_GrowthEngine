@@ -5,13 +5,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import RevealHeading from "@/components/ui/RevealHeading";
 import MagneticWrap from "@/components/ui/MagneticWrap";
 import SectionNumber from "@/components/ui/SectionNumber";
-import TiltCard from "@/components/features/TiltCard";
 import FloatingField from "@/components/form/FloatingField";
 import SuccessState from "@/components/form/SuccessState";
 import ScheduleModal from "@/components/form/ScheduleModal";
 import { FormScene } from "@/components/three/lazy";
 import { setFormProgress } from "@/components/three/progress";
-import { useReducedMotion } from "@/hooks/useQuality";
 import { submitLead } from "@/lib/submitLead";
 import { SlotTakenError, submitSchedule } from "@/lib/submitSchedule";
 import { formatMeeting, type Meeting } from "@/lib/schedule";
@@ -47,7 +45,6 @@ function completion(values: LeadPayload) {
 }
 
 export default function Contact() {
-  const reduced = useReducedMotion();
   const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<LeadPayload>(EMPTY);
   const [errors, setErrors] = useState<LeadErrors>({});
@@ -153,14 +150,11 @@ export default function Contact() {
           <p className="mt-7 max-w-xl text-base leading-relaxed text-text/90 sm:text-lg">{FORM.body}</p>
         </div>
 
-        <motion.div
-          animate={reduced ? undefined : { y: [0, -9, 0] }}
-          transition={{ duration: 7.5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative"
-        >
+        <div className="relative">
           <div aria-hidden className="absolute -inset-4 rounded-[2.4rem] bg-gradient-to-br from-blue/25 via-violet/20 to-cyan/20 blur-3xl" />
-          <TiltCard border="live" max={4.5} className="rounded-[2rem]" glassClassName="bg-ink-900/60">
-            <div className="relative z-10 p-6 sm:p-9" style={{ transform: "translateZ(28px)" }}>
+          <div className="gborder gborder-live relative rounded-[2rem]">
+            <div className="glass absolute inset-0 rounded-[inherit] bg-ink-900/60" />
+            <div className="relative z-10 p-6 sm:p-9">
               <AnimatePresence mode="wait">
                 {status === "success" ? (
                   <SuccessState key="success" note={note} />
@@ -221,8 +215,8 @@ export default function Contact() {
                 )}
               </AnimatePresence>
             </div>
-          </TiltCard>
-        </motion.div>
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>

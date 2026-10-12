@@ -2,7 +2,7 @@
 
 import RevealHeading from "@/components/ui/RevealHeading";
 import CtaButton from "@/components/ui/CtaButton";
-import { HeroScene } from "@/components/three/lazy";
+import HeroVideo from "@/components/ui/HeroVideo";
 import { scrollToId } from "@/lib/scroll";
 import { HERO } from "@/content/copy";
 
@@ -54,10 +54,8 @@ export default function Hero() {
       className="relative flex min-h-[100svh] items-start overflow-hidden px-5 pt-32 sm:px-8 lg:items-center lg:pt-24"
     >
       <HeroBackdrop />
-      <HeroScene />
-      <div aria-hidden className="scrim-left pointer-events-none absolute inset-y-0 left-0 w-full lg:w-[58%]" />
-      <div className="relative z-10 mx-auto w-full max-w-7xl">
-        <div className="max-w-2xl lg:max-w-[48%]">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 pb-16 lg:grid-cols-[1fr_1.1fr] lg:gap-14 lg:pb-0">
+        <div className="max-w-2xl">
           <RevealHeading
             as="h1"
             id="hero-title"
@@ -71,6 +69,7 @@ export default function Hero() {
             <CtaButton>{HERO.cta}</CtaButton>
           </div>
         </div>
+        <HeroVideo />
       </div>
       <ScrollCue />
     </section>
