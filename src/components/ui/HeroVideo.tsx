@@ -60,6 +60,48 @@ export default function HeroVideo() {
     return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
 
+  // Start with sound. Browsers block unmuted autoplay until the visitor interacts with the page, so
+  // if that happens we start muted and switch the sound on at the first click / tap / key press.
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    let cancelled = false;
+    let armed = false;
+
+    const unmuteOnGesture = (e: Event) => {
+      // a press on the player's own buttons is handled by those buttons
+      if (frameRef.current?.contains(e.target as Node) && (e.target as Element).closest?.("button")) return;
+      v.muted = false;
+      setMuted(false);
+      void v.play().catch(() => {});
+      disarm();
+    };
+    const events = ["pointerdown", "keydown", "touchend"] as const;
+    const disarm = () => {
+      if (!armed) return;
+      armed = false;
+      events.forEach((ev) => window.removeEventListener(ev, unmuteOnGesture));
+    };
+
+    v.muted = false;
+    v.play().then(
+      () => !cancelled && setMuted(false),
+      () => {
+        if (cancelled) return;
+        v.muted = true;
+        setMuted(true);
+        void v.play().catch(() => {});
+        armed = true;
+        events.forEach((ev) => window.addEventListener(ev, unmuteOnGesture, { passive: true }));
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      disarm();
+    };
+  }, []);
+
   useEffect(() => {
     if (!full) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
@@ -114,8 +156,6 @@ export default function HeroVideo() {
         <video
           ref={ref}
           src={SRC}
-          autoPlay
-          muted
           loop
           playsInline
           preload="auto"
