@@ -164,6 +164,16 @@ export default function HeroVideo() {
           aria-label="MS Growth Engine explainer video"
           className={`relative z-10 w-full rounded-[inherit] bg-ink-900 ${full ? "h-full object-contain" : "aspect-video object-cover"}`}
         />
+        {muted && playing && (
+          <button
+            type="button"
+            onClick={toggleSound}
+            className={`btn-pulse absolute z-20 flex items-center gap-2 rounded-full border border-white/25 bg-black/60 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/75 ${full ? "left-6 top-6" : "left-3 top-3"}`}
+          >
+            <SoundIcon muted />
+            Tap for sound
+          </button>
+        )}
         <div className={`absolute z-20 flex gap-2 ${full ? "bottom-6 right-6" : "bottom-3 right-3"}`}>
           <button
             type="button"
