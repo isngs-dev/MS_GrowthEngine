@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendConfirmationEmail } from "@/lib/confirmationEmail";
+import { sendConfirmationEmail, sendTeamBookingNotice } from "@/lib/confirmationEmail";
 import { createMeetEvent, googleConfigured } from "@/lib/googleCalendar";
 import { MEETING_TIME_ZONE, validateMeeting, type Meeting } from "@/lib/schedule";
 import { normalizeLead, validateLead, type LeadPayload } from "@/lib/validation";
@@ -61,6 +61,10 @@ export async function POST(request: Request) {
   }
 
   const result = await sendConfirmationEmail(lead, meeting, meetUrl);
+
+  // tell the iSN team (TEAM_NOTIFY_EMAIL, default kaustubh.b1@isngs.com) that a call was booked,
+  // using the same meeting link the visitor received
+  if (meeting) await sendTeamBookingNotice(lead, meeting, result.meetingUrl ?? meetUrl);
 
   // let the CRM / automation know whether a call was booked (same webhook as /api/lead)
   const webhook = process.env.LEAD_WEBHOOK_URL;

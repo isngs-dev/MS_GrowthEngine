@@ -23,7 +23,8 @@ export function googleConfigured() {
 
 let cached: { token: string; expires: number } | null = null;
 
-async function accessToken() {
+/** Access token for the connected Google account (cached until shortly before it expires). */
+export async function getGoogleAccessToken() {
   if (cached && cached.expires > Date.now() + 60_000) return cached.token;
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -43,7 +44,7 @@ async function accessToken() {
 
 export async function createMeetEvent(lead: LeadPayload, meeting: Meeting): Promise<MeetResult> {
   try {
-    const token = await accessToken();
+    const token = await getGoogleAccessToken();
     const calendar = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || "primary");
     const base = `https://www.googleapis.com/calendar/v3/calendars/${calendar}/events`;
     const auth = { Authorization: `Bearer ${token}` };
@@ -101,7 +102,7 @@ export async function createMeetEvent(lead: LeadPayload, meeting: Meeting): Prom
  */
 export async function busyForDay(date: string): Promise<{ allDay: boolean; intervals: [number, number][] } | null> {
   try {
-    const token = await accessToken();
+    const token = await getGoogleAccessToken();
     const calendar = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || "primary");
     const from = meetingStartMs({ date, time: "00:00", timeZone: "America/New_York" });
     const to = meetingStartMs({ date: nextDate(date), time: "00:00", timeZone: "America/New_York" });
