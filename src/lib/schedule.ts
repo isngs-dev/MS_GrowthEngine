@@ -59,6 +59,7 @@ export function validateMeeting(m: Partial<Meeting>, now = Date.now()): MeetingE
   const errors: MeetingErrors = {};
   if (!m.date || !DATE_RE.test(m.date)) errors.date = "Please choose a date.";
   if (!m.time || !TIME_RE.test(m.time)) errors.time = "Please choose a time.";
+  else if (!SLOT_TIMES.includes(m.time)) errors.time = "Please choose one of the available times.";
   if (errors.date || errors.time) return errors;
   const tz = m.timeZone && isValidTimeZone(m.timeZone) ? m.timeZone : "UTC";
   const start = meetingStartMs({ date: m.date!, time: m.time!, timeZone: tz });
@@ -83,3 +84,23 @@ export function formatMeeting(m: Meeting) {
   const time = new Intl.DateTimeFormat("en-US", { timeZone: m.timeZone, hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(start);
   return `${day} at ${time}`;
 }
+
+/** Bookable start times (Eastern Time): 9:00 AM to 5:30 PM in 30 minute slots. */
+export const SLOT_TIMES: string[] = Array.from({ length: 18 }, (_, i) => {
+  const mins = 9 * 60 + i * 30;
+  return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+});
+
+/** "13:30" -> "1:30 PM" */
+export function slotLabel(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** The calendar day after a YYYY-MM-DD string. */
+export function nextDate(date: string) {
+  const [y, mo, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, mo - 1, d + 1)).toISOString().slice(0, 10);
+}
+
+export type Slot = { time: string; available: boolean };

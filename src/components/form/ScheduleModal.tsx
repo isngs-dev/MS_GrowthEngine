@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { MEETING_TIME_ZONE, todayInMeetingZone, validateMeeting, type Meeting, type MeetingErrors } from "@/lib/schedule";
+import { MEETING_TIME_ZONE, SLOT_TIMES, slotLabel, todayInMeetingZone, validateMeeting, type Meeting, type MeetingErrors, type Slot } from "@/lib/schedule";
 import { SCHEDULE } from "@/content/copy";
 
 type Props = {
@@ -21,6 +21,8 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
   const [time, setTime] = useState("");
   const [errors, setErrors] = useState<MeetingErrors>({});
   const timeZone = MEETING_TIME_ZONE;
+  const [slots, setSlots] = useState<Slot[] | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   const dateInput = useRef<HTMLInputElement>(null);
 
@@ -33,6 +35,31 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
       document.documentElement.style.overflow = prev;
     };
   }, []);
+
+  // load the free / taken slots for the chosen day
+  useEffect(() => {
+    if (!date) return;
+    const ctrl = new AbortController();
+    const t = window.setTimeout(() => {
+      setLoadingSlots(true);
+      fetch(`/api/availability?date=${encodeURIComponent(date)}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("availability"))))
+        .then((d: { slots: Slot[] }) => {
+          setSlots(d.slots);
+          // drop a previously picked time that is no longer free
+          setTime((cur) => (d.slots.some((x) => x.time === cur && x.available) ? cur : ""));
+        })
+        // if availability cannot be loaded, show every slot: the server still checks on booking
+        .catch((e) => {
+          if (e?.name !== "AbortError") setSlots(SLOT_TIMES.map((time) => ({ time, available: true })));
+        })
+        .finally(() => setLoadingSlots(false));
+    }, 0);
+    return () => {
+      window.clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [date]);
 
   // Escape = decline; Tab stays inside the dialog
   useEffect(() => {
@@ -63,7 +90,7 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
     const found = validateMeeting(meeting);
     setErrors(found);
     if (found.date || found.time) {
-      (found.date ? dateInput.current : panel.current?.querySelector<HTMLInputElement>("#meet-time"))?.focus();
+      (found.date ? dateInput.current : panel.current?.querySelector<HTMLElement>("[role=radiogroup]"))?.focus();
       return;
     }
     onBook(meeting);
@@ -88,7 +115,7 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 12, scale: 0.97 }}
         transition={{ type: "spring", stiffness: 260, damping: 26 }}
-        className="glass gborder gborder-live relative my-auto w-full max-w-md rounded-[2rem] bg-ink-900/90 p-6 sm:p-8"
+        className="glass gborder gborder-live relative my-auto w-full max-w-lg rounded-[2rem] bg-ink-900/90 p-6 sm:p-8"
       >
         <h3 id="meet-title" className="font-display text-3xl font-bold leading-tight text-white">
           {SCHEDULE.title}
@@ -111,6 +138,8 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
               disabled={busy}
               onChange={(e) => {
                 setDate(e.target.value);
+                setTime("");
+                setSlots(null);
                 setErrors((x) => ({ ...x, date: undefined }));
               }}
               aria-invalid={errors.date ? true : undefined}
@@ -124,22 +153,57 @@ export default function ScheduleModal({ busy, error, onBook, onDecline }: Props)
             )}
           </div>
           <div>
-            <label htmlFor="meet-time" className="mb-1.5 block text-sm font-medium text-muted">
+            <p id="meet-time-label" className="mb-2 block text-sm font-medium text-muted">
               {SCHEDULE.time}
-            </label>
-            <input
-              id="meet-time"
-              type="time"
-              value={time}
-              disabled={busy}
-              onChange={(e) => {
-                setTime(e.target.value);
-                setErrors((x) => ({ ...x, time: undefined }));
-              }}
-              aria-invalid={errors.time ? true : undefined}
-              aria-describedby={errors.time ? "meet-time-err" : undefined}
-              className={`${fieldClass} ${errors.time ? "!border-danger/80" : ""}`}
-            />
+            </p>
+            {!date ? (
+              <p className="px-1 text-sm text-faint">{SCHEDULE.pickDate}</p>
+            ) : (
+              <div
+                role="radiogroup"
+                aria-labelledby="meet-time-label"
+                aria-busy={loadingSlots}
+                aria-describedby={errors.time ? "meet-time-err" : undefined}
+                tabIndex={-1}
+                className={`grid grid-cols-3 gap-2 outline-none sm:grid-cols-4 ${loadingSlots || !slots ? "opacity-50" : ""}`}
+              >
+                {(slots ?? SLOT_TIMES.map((t) => ({ time: t, available: false }))).map((slot) => {
+                  const selected = time === slot.time;
+                  return (
+                    <button
+                      key={slot.time}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={busy || !slot.available}
+                      onClick={() => {
+                        setTime(slot.time);
+                        setErrors((x) => ({ ...x, time: undefined }));
+                      }}
+                      className={`h-11 rounded-xl border text-sm font-semibold transition-colors ${
+                        selected
+                          ? "border-cyan bg-cyan/20 text-white shadow-[0_0_20px_-4px_rgb(255_196_160/0.6)]"
+                          : slot.available
+                            ? "border-white/20 bg-white/[0.04] text-text hover:border-cyan/70 hover:bg-white/10"
+                            : "cursor-not-allowed border-white/10 bg-white/[0.03] text-faint line-through"
+                      }`}
+                    >
+                      {slotLabel(slot.time)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {date && (
+              <div className="mt-3 flex items-center gap-5 px-1 text-xs text-faint">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded border border-white/30" /> {SCHEDULE.available}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded border border-white/10 bg-white/10" /> {SCHEDULE.unavailable}
+                </span>
+              </div>
+            )}
             {errors.time && (
               <p id="meet-time-err" className="mt-1.5 px-1 text-sm text-[#ff9bb0]">
                 {errors.time}

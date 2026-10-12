@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { meetingStartMs, MEETING_MINUTES, type Meeting } from "./schedule";
+import { meetingStartMs, MEETING_MINUTES, nextDate, type Meeting } from "./schedule";
 import type { LeadPayload } from "./validation";
 
 /**
@@ -92,5 +92,42 @@ export async function createMeetEvent(lead: LeadPayload, meeting: Meeting): Prom
     // keep personal data out of the log: message only
     console.error("[google-calendar]", err instanceof Error ? err.message : "failed");
     return { status: "error" };
+  }
+}
+
+/**
+ * Busy time on the host calendar for one day (Eastern Time), or null if it could not be read.
+ * `allDay` is true when an all-day event blocks the whole date.
+ */
+export async function busyForDay(date: string): Promise<{ allDay: boolean; intervals: [number, number][] } | null> {
+  try {
+    const token = await accessToken();
+    const calendar = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || "primary");
+    const from = meetingStartMs({ date, time: "00:00", timeZone: "America/New_York" });
+    const to = meetingStartMs({ date: nextDate(date), time: "00:00", timeZone: "America/New_York" });
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calendar}/events?${new URLSearchParams({
+        timeMin: new Date(from).toISOString(),
+        timeMax: new Date(to).toISOString(),
+        singleEvents: "true",
+        maxResults: "100",
+      })}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) throw new Error(`Calendar list failed (${res.status})`);
+    const data = (await res.json()) as {
+      items?: { status?: string; transparency?: string; start?: { dateTime?: string; date?: string }; end?: { dateTime?: string } }[];
+    };
+    let allDay = false;
+    const intervals: [number, number][] = [];
+    for (const e of data.items ?? []) {
+      if (e.status === "cancelled" || e.transparency === "transparent") continue;
+      if (e.start?.dateTime && e.end?.dateTime) intervals.push([Date.parse(e.start.dateTime), Date.parse(e.end.dateTime)]);
+      else allDay = true;
+    }
+    return { allDay, intervals };
+  } catch (err) {
+    console.error("[google-calendar]", err instanceof Error ? err.message : "failed");
+    return null;
   }
 }
