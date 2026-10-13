@@ -183,3 +183,56 @@ ${row("Email", `<a href="mailto:${esc(lead.email)}" style="color:#ffc4a0">${esc(
     category: "ms-growth-engine-team-notice",
   });
 }
+
+/** "Your call is tomorrow" reminder, sent about 24 hours before a booked call. */
+export async function sendReminderEmail(who: { name?: string; email: string }, meeting: Meeting, meetingUrl: string): Promise<boolean> {
+  if (!mailConfigured()) return false;
+  const fromEmail = mailFrom()!;
+  const name = who.name?.trim() || "there";
+  const when = formatMeeting(meeting);
+  const site = "https://www.isngs.com/";
+
+  const subject = "Reminder: you have a call tomorrow with MS Growth Engine";
+  const text = `Hi ${name},
+
+This is a reminder that you have a booking tomorrow.
+
+When: ${when}
+Duration: ${MEETING_MINUTES} minutes
+Meeting link: ${meetingUrl}
+
+If you need to change the time, just reply to this email.
+
+iSN Business Solutions
+${site}`;
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:0 0 18px"><div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a08a78;padding-bottom:4px">${label}</div><div style="font-size:17px;font-weight:700;color:#f6ece0">${value}</div></td></tr>`;
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#1a120d" bgcolor="#1a120d">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#1a120d" style="background:#1a120d"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;font-family:Arial,Helvetica,sans-serif">
+<tr><td style="padding:0 4px 18px;font-size:22px;color:#f6ece0"><span style="background:#fbefe3;border-radius:6px;padding:3px 10px;color:#2f5bd0;font-style:italic;font-weight:700">iSN</span><span style="color:#6b4c38"> &nbsp;|&nbsp; </span><span style="font-weight:700">MS Growth Engine</span></td></tr>
+<tr><td bgcolor="#2a1c13" style="background:#2a1c13;border:1px solid #4d3626;border-radius:24px;padding:34px 32px">
+<h1 style="margin:0 0 14px;font-size:30px;line-height:1.2;color:#f6ece0">You have a booking tomorrow</h1>
+<p style="margin:0 0 6px;font-size:16px;line-height:1.6;color:#cdb9a5">Hi ${esc(name)}, this is a reminder about your call with the iSN team.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#3a281b;border:1px solid #4d3626;border-radius:14px;margin:22px 0 8px"><tr><td style="padding:22px 24px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+${row("When", esc(when))}
+${row("Duration", `${MEETING_MINUTES} minutes`)}
+${row("Meeting link", `<a href="${esc(meetingUrl)}" style="color:#ffc4a0">${esc(meetingUrl)}</a>`)}
+</table></td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0 6px"><tr><td style="background:#ffc4a0;border-radius:999px"><a href="${esc(meetingUrl)}" style="display:inline-block;padding:14px 30px;color:#2a160c;font-size:16px;font-weight:700;text-decoration:none">Join meeting</a></td></tr></table>
+<p style="margin:16px 0 0;font-size:14px;color:#a08a78">Need to change the time? Just reply to this email.</p>
+</td></tr>
+<tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:#a08a78;text-align:center">iSN Business Solutions &middot; <a href="${site}" style="color:#ffc4a0">www.isngs.com</a><br/>You received this email because you booked a call on our website.</td></tr>
+</table></td></tr></table></body></html>`;
+
+  return deliver({
+    to: { email: who.email, name: who.name },
+    from: { email: fromEmail, name: process.env.SENDGRID_FROM_NAME || "MS Growth Engine" },
+    replyTo: { email: fromEmail },
+    subject,
+    text,
+    html,
+    category: "ms-growth-engine-reminder",
+  });
+}

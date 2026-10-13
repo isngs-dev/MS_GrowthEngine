@@ -75,6 +75,8 @@ export async function createMeetEvent(lead: LeadPayload, meeting: Meeting): Prom
         start: { dateTime: start, timeZone: meeting.timeZone },
         end: { dateTime: end, timeZone: meeting.timeZone },
         attendees: [{ email: lead.email, displayName: lead.name }],
+        // lets the reminder job find our bookings (and remember which ones it already reminded)
+        extendedProperties: { private: { source: "ms-growth-engine" } },
         conferenceData: {
           createRequest: { requestId: randomUUID(), conferenceSolutionKey: { type: "hangoutsMeet" } },
         },
@@ -130,5 +132,78 @@ export async function busyForDay(date: string): Promise<{ allDay: boolean; inter
   } catch (err) {
     console.error("[google-calendar]", err instanceof Error ? err.message : "failed");
     return null;
+  }
+}
+
+export type Booking = {
+  id: string;
+  startMs: number;
+  createdMs: number;
+  meetUrl?: string;
+  attendee?: { email: string; name?: string };
+  reminded: boolean;
+};
+
+/** Bookings made through the website that start between `fromMs` and `toMs`. */
+export async function listBookings(fromMs: number, toMs: number): Promise<Booking[] | null> {
+  try {
+    const token = await getGoogleAccessToken();
+    const calendar = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || "primary");
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calendar}/events?${new URLSearchParams({
+        timeMin: new Date(fromMs).toISOString(),
+        timeMax: new Date(toMs).toISOString(),
+        singleEvents: "true",
+        orderBy: "startTime",
+        maxResults: "100",
+        privateExtendedProperty: "source=ms-growth-engine",
+      })}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) throw new Error(`Calendar list failed (${res.status})`);
+    const data = (await res.json()) as {
+      items?: {
+        id: string;
+        status?: string;
+        created?: string;
+        hangoutLink?: string;
+        start?: { dateTime?: string };
+        attendees?: { email: string; displayName?: string; self?: boolean }[];
+        extendedProperties?: { private?: Record<string, string> };
+      }[];
+    };
+    const out: Booking[] = [];
+    for (const e of data.items ?? []) {
+      if (e.status === "cancelled" || !e.start?.dateTime) continue;
+      const a = e.attendees?.find((x) => !x.self) ?? e.attendees?.[0]; // fall back for a visitor who is also the calendar owner
+      out.push({
+        id: e.id,
+        startMs: Date.parse(e.start.dateTime),
+        createdMs: e.created ? Date.parse(e.created) : 0,
+        meetUrl: e.hangoutLink,
+        attendee: a ? { email: a.email, name: a.displayName } : undefined,
+        reminded: e.extendedProperties?.private?.reminderSent === "1",
+      });
+    }
+    return out;
+  } catch (err) {
+    console.error("[google-calendar]", err instanceof Error ? err.message : "failed");
+    return null;
+  }
+}
+
+/** Remember that the reminder went out so the hourly job never sends it twice. */
+export async function markReminded(eventId: string): Promise<boolean> {
+  try {
+    const token = await getGoogleAccessToken();
+    const calendar = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || "primary");
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendar}/events/${encodeURIComponent(eventId)}?sendUpdates=none`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ extendedProperties: { private: { reminderSent: "1" } } }),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }

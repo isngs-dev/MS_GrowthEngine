@@ -104,3 +104,10 @@ export function nextDate(date: string) {
 }
 
 export type Slot = { time: string; available: boolean };
+
+/** The Eastern-Time date + time of a UTC instant (inverse of meetingStartMs). */
+export function meetingFromMs(ms: number): Meeting {
+  const date = new Intl.DateTimeFormat("en-CA", { timeZone: MEETING_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms);
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone: MEETING_TIME_ZONE, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(ms);
+  return { date, time, timeZone: MEETING_TIME_ZONE };
+}
