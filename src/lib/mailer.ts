@@ -7,7 +7,6 @@ import { getGoogleAccessToken, googleConfigured } from "./googleCalendar";
 
 export type Outgoing = {
   to: { email: string; name?: string };
-  cc?: string;
   from: { email: string; name: string };
   replyTo?: { email: string; name?: string };
   subject: string;
@@ -37,7 +36,6 @@ function buildMime(m: Outgoing) {
   const headers = [
     `From: ${addr(m.from)}`,
     `To: ${addr(m.to)}`,
-    ...(m.cc ? [`Cc: ${m.cc}`] : []),
     ...(m.replyTo ? [`Reply-To: ${addr(m.replyTo)}`] : []),
     `Subject: ${word(m.subject)}`,
     "MIME-Version: 1.0",

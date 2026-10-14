@@ -7,12 +7,6 @@ import type { LeadPayload } from "./validation";
 /** Server-only: builds the confirmation e-mails; lib/mailer.ts sends them (Gmail API). */
 
 
-/** Address cc'd on the visitor's confirmation (TEAM_NOTIFY_EMAIL, default kaustubh.b1@isngs.com). */
-function teamCc(recipient: string) {
-  const cc = process.env.TEAM_NOTIFY_EMAIL || "kaustubh.b1@isngs.com";
-  return cc.toLowerCase() === recipient.toLowerCase() ? undefined : cc;
-}
-
 export type SendResult = { sent: boolean; reason?: "not-configured" | "failed"; meetingUrl?: string };
 
 /** MEETING_URL if you run a fixed room (Meet / Zoom / Teams); otherwise a unique Jitsi room per booking. */
@@ -109,8 +103,6 @@ You received this email because you submitted the contact form on our website.`;
 
   const ok = await deliver({
     to: { email: lead.email, name: lead.name },
-    // the iSN team is cc'd on every visitor confirmation (skipped when it is the recipient itself)
-    cc: teamCc(lead.email),
     from: { email: fromEmail, name: mailName() },
     subject,
     text,
