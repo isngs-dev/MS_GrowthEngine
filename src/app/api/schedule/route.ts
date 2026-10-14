@@ -9,8 +9,8 @@ import { normalizeLead, validateLead, type LeadPayload } from "@/lib/validation"
  *  - booked  -> confirmation e-mail with the meeting link + calendar invite
  *  - declined -> normal confirmation e-mail
  * A booked call also creates a Google Calendar event with a Meet link (lib/googleCalendar.ts).
- * E-mail goes out through SendGrid (SENDGRID_API_KEY + SENDGRID_FROM_EMAIL, see .env.example).
- * If SendGrid is not configured the request still succeeds and `emailed` is false.
+ * E-mail goes out through the Gmail API (MAIL_FROM_EMAIL + Google credentials, see .env.example).
+ * If mail is not configured the request still succeeds and `emailed` is false.
  */
 export async function POST(request: Request) {
   let body: { lead?: Partial<LeadPayload>; meeting?: Partial<Meeting> | null };

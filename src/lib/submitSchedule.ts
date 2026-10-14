@@ -8,7 +8,7 @@ export type ScheduleResult = { booked: boolean; emailed: boolean };
 
 /**
  * Step two of the form: tell the server whether the visitor booked a call
- * (`meeting`) or declined (`null`). The server sends the matching SendGrid e-mail.
+ * (`meeting`) or declined (`null`). The server sends the matching confirmation e-mail.
  * Rejects on network / server errors so the modal can offer a retry.
  */
 export async function submitSchedule(lead: LeadPayload, meeting: Meeting | null): Promise<ScheduleResult> {

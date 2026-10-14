@@ -1,11 +1,8 @@
 import { getGoogleAccessToken, googleConfigured } from "./googleCalendar";
 
 /**
- * Server-only mail transport. Two ways to send, same message:
- *  - Gmail API (MAIL_TRANSPORT=gmail): sent from your Google Workspace mailbox, which lands in inboxes far
- *    more reliably than a shared SendGrid IP. Needs the gmail.send scope on GOOGLE_REFRESH_TOKEN and
- *    SENDGRID_FROM_EMAIL (or MAIL_FROM_EMAIL) set up as a "Send mail as" alias of that mailbox.
- *  - SendGrid: used when Gmail is not enabled, and as a fallback if the Gmail send fails.
+ * Server-only mail transport: the Gmail API, sent from the Google Workspace mailbox behind GOOGLE_REFRESH_TOKEN.
+ * Needs the gmail.send scope on that token and MAIL_FROM_EMAIL set up as a "Send mail as" alias of the mailbox.
  */
 
 export type Outgoing = {
@@ -18,19 +15,12 @@ export type Outgoing = {
   html: string;
   /** calendar invite attached as .ics */
   ics?: { filename: string; content: string };
-  category: string;
 };
 
-export function fromEmail() {
-  return process.env.MAIL_FROM_EMAIL || process.env.SENDGRID_FROM_EMAIL;
-}
+export const fromEmail = () => process.env.MAIL_FROM_EMAIL;
+export const fromName = () => process.env.MAIL_FROM_NAME || "MS Growth Engine";
 
-const gmailEnabled = () => process.env.MAIL_TRANSPORT === "gmail" && googleConfigured();
-const sendgridEnabled = () => !!(process.env.SENDGRID_API_KEY && fromEmail());
-
-export function mailConfigured() {
-  return !!fromEmail() && (gmailEnabled() || sendgridEnabled());
-}
+export const mailConfigured = () => !!fromEmail() && googleConfigured();
 
 /* ---------------------------------- Gmail --------------------------------- */
 
@@ -90,51 +80,5 @@ async function sendGmail(m: Outgoing) {
   }
 }
 
-/* -------------------------------- SendGrid -------------------------------- */
-
-async function sendSendGrid(m: Outgoing) {
-  const body: Record<string, unknown> = {
-    personalizations: [
-      { to: [{ email: m.to.email, ...(m.to.name ? { name: m.to.name } : {}) }], ...(m.cc ? { cc: [{ email: m.cc }] } : {}) },
-    ],
-    from: m.from,
-    ...(m.replyTo ? { reply_to: m.replyTo } : {}),
-    subject: m.subject,
-    // plain links (no click-tracking redirect) and no tracking pixel look far less like marketing mail
-    tracking_settings: { click_tracking: { enable: false, enable_text: false }, open_tracking: { enable: false } },
-    categories: [m.category],
-    content: [
-      { type: "text/plain", value: m.text },
-      { type: "text/html", value: m.html },
-    ],
-    ...(m.ics
-      ? {
-          attachments: [
-            {
-              content: Buffer.from(m.ics.content).toString("base64"),
-              type: "text/calendar; method=PUBLISH",
-              filename: m.ics.filename,
-              disposition: "attachment",
-            },
-          ],
-        }
-      : {}),
-  };
-  try {
-    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-/** Sends one message. Gmail first when enabled, SendGrid as the fallback. Returns true when accepted. */
-export async function deliver(m: Outgoing): Promise<boolean> {
-  if (gmailEnabled() && (await sendGmail(m))) return true;
-  if (sendgridEnabled()) return sendSendGrid(m);
-  return false;
-}
+/** Sends one message through the Gmail API. Returns true when accepted. */
+export const deliver = sendGmail;

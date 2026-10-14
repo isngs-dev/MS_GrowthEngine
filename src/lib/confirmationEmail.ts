@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { formatMeeting, meetingStartMs, MEETING_MINUTES, type Meeting } from "./schedule";
 import { accent, button, detailPanel, emailShell, esc, link, note, para, strong } from "./emailTheme";
-import { deliver, fromEmail as mailFrom, mailConfigured } from "./mailer";
+import { deliver, fromEmail as mailFrom, fromName as mailName, mailConfigured } from "./mailer";
 import type { LeadPayload } from "./validation";
 
-/** Server-only: builds the confirmation e-mails; lib/mailer.ts sends them (Gmail API or SendGrid). */
+/** Server-only: builds the confirmation e-mails; lib/mailer.ts sends them (Gmail API). */
 
 
 /** Address cc'd on the visitor's confirmation (TEAM_NOTIFY_EMAIL, default kaustubh.b1@isngs.com). */
@@ -53,7 +53,6 @@ export async function sendConfirmationEmail(lead: LeadPayload, meeting?: Meeting
   if (!mailConfigured()) return { sent: false, reason: "not-configured" };
   const fromEmail = mailFrom()!;
 
-  const fromName = process.env.SENDGRID_FROM_NAME || "MS Growth Engine";
   const name = esc(lead.name);
   const company = esc(lead.company);
   const url = meeting ? meetingUrl ?? newMeetingUrl() : undefined;
@@ -112,12 +111,11 @@ You received this email because you submitted the contact form on our website.`;
     to: { email: lead.email, name: lead.name },
     // the iSN team is cc'd on every visitor confirmation (skipped when it is the recipient itself)
     cc: teamCc(lead.email),
-    from: { email: fromEmail, name: fromName },
+    from: { email: fromEmail, name: mailName() },
     subject,
     text,
     html,
     ics: meeting && url ? { filename: "ms-growth-engine-call.ics", content: buildIcs(lead, meeting, url, fromEmail) } : undefined,
-    category: "ms-growth-engine-confirmation",
   });
   return ok ? { sent: true, meetingUrl: url } : { sent: false, reason: "failed" };
 }
@@ -170,12 +168,11 @@ Email: ${lead.email}`;
 
   return deliver({
     to: { email: to },
-    from: { email: fromEmail, name: process.env.SENDGRID_FROM_NAME || "MS Growth Engine" },
+    from: { email: fromEmail, name: mailName() },
     replyTo: { email: lead.email, name: lead.name },
     subject,
     text,
     html,
-    category: "ms-growth-engine-team-notice",
   });
 }
 
@@ -218,11 +215,10 @@ ${site}`;
 
   return deliver({
     to: { email: who.email, name: who.name },
-    from: { email: fromEmail, name: process.env.SENDGRID_FROM_NAME || "MS Growth Engine" },
+    from: { email: fromEmail, name: mailName() },
     replyTo: { email: fromEmail },
     subject,
     text,
     html,
-    category: "ms-growth-engine-reminder",
   });
 }
