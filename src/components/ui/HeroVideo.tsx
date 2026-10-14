@@ -39,7 +39,7 @@ function ExpandIcon({ full }: { full: boolean }) {
   );
 }
 
-/** Explainer video for the hero: muted autoplay loop with pause, sound and fullscreen controls. */
+/** Explainer video for the hero: autoplay loop with a centred play/pause button plus sound and fullscreen controls. */
 export default function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -60,29 +60,12 @@ export default function HeroVideo() {
     return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
 
-  // Start with sound. Browsers block unmuted autoplay until the visitor interacts with the page, so
-  // if that happens we start muted and switch the sound on at the first click / tap / key press.
+  // Try to start with sound. If the browser blocks that, play muted; sound then only comes on through
+  // the sound buttons, never from a click elsewhere on the page.
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     let cancelled = false;
-    let armed = false;
-
-    const unmuteOnGesture = (e: Event) => {
-      // a press on the player's own buttons is handled by those buttons
-      if (frameRef.current?.contains(e.target as Node) && (e.target as Element).closest?.("button")) return;
-      v.muted = false;
-      setMuted(false);
-      void v.play().catch(() => {});
-      disarm();
-    };
-    const events = ["pointerdown", "keydown", "touchend"] as const;
-    const disarm = () => {
-      if (!armed) return;
-      armed = false;
-      events.forEach((ev) => window.removeEventListener(ev, unmuteOnGesture));
-    };
-
     v.muted = false;
     v.play().then(
       () => !cancelled && setMuted(false),
@@ -91,14 +74,10 @@ export default function HeroVideo() {
         v.muted = true;
         setMuted(true);
         void v.play().catch(() => {});
-        armed = true;
-        events.forEach((ev) => window.addEventListener(ev, unmuteOnGesture, { passive: true }));
       },
     );
-
     return () => {
       cancelled = true;
-      disarm();
     };
   }, []);
 
@@ -155,14 +134,14 @@ export default function HeroVideo() {
       >
         <video
           ref={ref}
-          src={SRC}
+          src={`${SRC}#t=0.1`}
           loop
           playsInline
           preload="auto"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           aria-label="MS Growth Engine explainer video"
-          className={`relative z-10 w-full rounded-[inherit] bg-ink-900 ${full ? "h-full object-contain" : "aspect-video object-cover"}`}
+          className={`relative z-10 w-full rounded-[inherit] bg-ink-900 transition-opacity duration-300 ${playing ? "" : "opacity-50"} ${full ? "h-full object-contain" : "aspect-video object-cover"}`}
         />
         {muted && playing && (
           <button
@@ -174,15 +153,15 @@ export default function HeroVideo() {
             Tap for sound
           </button>
         )}
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label={playing ? "Pause video" : "Play video"}
+          className={`${BTN} absolute left-1/2 top-1/2 z-20 !h-16 !w-16 -translate-x-1/2 -translate-y-1/2 transition-opacity ${playing ? "opacity-40 hover:opacity-100" : "opacity-100"}`}
+        >
+          <PlayPauseIcon playing={playing} />
+        </button>
         <div className={`absolute z-20 flex gap-2 ${full ? "bottom-6 right-6" : "bottom-3 right-3"}`}>
-          <button
-            type="button"
-            onClick={togglePlay}
-            aria-label={playing ? "Pause video" : "Play video"}
-            className={BTN}
-          >
-            <PlayPauseIcon playing={playing} />
-          </button>
           <button
             type="button"
             onClick={toggleSound}
