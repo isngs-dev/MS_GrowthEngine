@@ -13,7 +13,7 @@ import { setFormProgress } from "@/components/three/progress";
 import { submitLead } from "@/lib/submitLead";
 import { SlotTakenError, submitSchedule } from "@/lib/submitSchedule";
 import { formatMeeting, type Meeting } from "@/lib/schedule";
-import { FIELD_ORDER, validateField, validateLead, type LeadErrors, type LeadPayload } from "@/lib/validation";
+import { FIELD_ORDER, formatUsPhone, validateField, validateLead, type LeadErrors, type LeadPayload } from "@/lib/validation";
 import { FORM, SCHEDULE } from "@/content/copy";
 
 type Status = "idle" | "submitting" | "schedule" | "success" | "error";
@@ -62,7 +62,8 @@ export default function Contact() {
       return next;
     });
 
-  const handleChange = (field: keyof LeadPayload, value: string) => {
+  const handleChange = (field: keyof LeadPayload, raw: string) => {
+    const value = field === "phone" ? formatUsPhone(raw) : raw;
     const next = { ...values, [field]: value };
     setValues(next);
     setFormProgress(completion(next));

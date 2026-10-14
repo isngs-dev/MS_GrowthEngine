@@ -14,8 +14,19 @@ export type LeadPayload = {
 export type LeadErrors = Partial<Record<keyof LeadPayload, string>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-// digits plus the usual separators; 7-15 digits covers local through E.164 numbers
+// digits plus the usual separators; the digit count / area code are checked separately
 const PHONE_CHARS_RE = /^\+?[\d\s().-]+$/;
+
+/** National digits of a US number: strips non-digits and a leading country code 1, caps at 10. */
+const usDigits = (raw: string) => raw.replace(/\D/g, "").replace(/^1/, "").slice(0, 10);
+
+/** Progressive "(555) 123-4567" formatter, safe to run on every keystroke. */
+export function formatUsPhone(raw: string): string {
+  const d = usDigits(raw);
+  if (d.length <= 3) return d && `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
 // optional scheme, a dotted host name, optional port / path
 const URL_RE = /^(https?:\/\/)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(:\d{2,5})?([/?#]\S*)?$/i;
 
@@ -37,9 +48,8 @@ export function validateField(field: keyof LeadPayload, raw: string): string | u
       return undefined;
     case "phone": {
       if (!value) return "Please enter your phone number.";
-      const digits = value.replace(/\D/g, "");
-      if (!PHONE_CHARS_RE.test(value) || digits.length < 7 || digits.length > 15) {
-        return "Enter a valid phone number (7 to 15 digits).";
+      if (!PHONE_CHARS_RE.test(value) || !/^[2-9]\d{9}$/.test(usDigits(value))) {
+        return "Enter a valid US phone number, like (555) 123-4567.";
       }
       return undefined;
     }
@@ -65,7 +75,7 @@ export function normalizeLead(values: LeadPayload): LeadPayload {
     name: values.name.trim(),
     company: values.company.trim(),
     website: website && !/^https?:\/\//i.test(website) ? `https://${website}` : website,
-    phone: values.phone.trim(),
+    phone: formatUsPhone(values.phone),
     email: values.email.trim().toLowerCase(),
   };
 }
