@@ -18,7 +18,7 @@ export type Outgoing = {
 };
 
 export const fromEmail = () => process.env.MAIL_FROM_EMAIL;
-export const fromName = () => process.env.MAIL_FROM_NAME || "MS Growth Engine";
+export const fromName = () => process.env.MAIL_FROM_NAME || "MS GROWTH ENGINE";
 
 export const mailConfigured = () => !!fromEmail() && googleConfigured();
 

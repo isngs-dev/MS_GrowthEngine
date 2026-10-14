@@ -41,7 +41,7 @@ function buildIcs(lead: LeadPayload, meeting: Meeting, url: string, fromEmail: s
     "SUMMARY:MS Growth Engine: intro call",
     `DESCRIPTION:Meeting link: ${url}`,
     `LOCATION:${url}`,
-    `ORGANIZER;CN=MS Growth Engine:mailto:${fromEmail}`,
+    `ORGANIZER;CN=MS GROWTH ENGINE:mailto:${fromEmail}`,
     `ATTENDEE;CN=${lead.name.replace(/[;,:"]/g, " ")}:mailto:${lead.email}`,
     "END:VEVENT",
     "END:VCALENDAR",
