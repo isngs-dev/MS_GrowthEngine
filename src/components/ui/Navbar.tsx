@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Logo from "@/components/ui/Logo";
 import CtaButton from "@/components/ui/CtaButton";
-import { NAV } from "@/content/copy";
+import { BRAND, NAV } from "@/content/copy";
 
 /** Sticky glass navbar: logo on the left, primary CTA on the right. */
 export default function Navbar() {
@@ -24,7 +24,7 @@ export default function Navbar() {
           scrolled ? "bg-ink-900/70 shadow-[0_20px_60px_-20px_rgb(0_0_0/0.9)]" : ""
         }`}
       >
-        <a href="#top" aria-label="MS Growth Engine, back to top" className="rounded-lg">
+        <a href={BRAND.url} target="_blank" rel="noopener" aria-label="iSN Business Solutions (isngs.com)" className="rounded-lg">
           <Logo />
         </a>
         <CtaButton size="sm" pulse={false}>

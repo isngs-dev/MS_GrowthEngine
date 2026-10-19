@@ -6,7 +6,7 @@
 export const BRAND = {
   product: "MS Growth Engine",
   company: "iSN Business Solutions",
-  url: "https://www.isngs.com/",
+  url: "https://isngs.com/",
 } as const;
 
 export const CTA_LABEL = "BUILD MY GROWTH ENGINE";
